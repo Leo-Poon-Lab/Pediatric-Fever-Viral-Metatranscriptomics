@@ -1,0 +1,27 @@
+# 临时文件
+*.tmp
+*.temp
+*~
+
+# 日志文件
+logs/
+*.log
+
+# 环境文件
+envs/
+venv/
+.env
+
+# 大文件/压缩包（如果已经在仓库中）
+*.zip
+*.tar.gz
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 结果数据（如果太大）
+results/
+# 或者只忽略部分大文件
+# results/*.bam
+# results/*.vcf
