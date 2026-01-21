@@ -4,6 +4,15 @@ README.md
 *.temp
 *~
 
+00_preprocessing/
+01_reads_taxa/
+02_assembly/
+03_virus_identification/
+04_abundance/
+05_virus_reads_contigs_integration_analysis/
+resources/
+tt
+
 # 日志文件
 logs/
 *.log
