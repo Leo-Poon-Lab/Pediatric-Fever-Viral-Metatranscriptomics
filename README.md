@@ -1,6 +1,6 @@
 # Pediatric-Fever-Viral-Metatranscriptomics
 
-Snakemake workflow and analysis utilities supporting the manuscript "Elucidating the Viral Aetiology of Unexplained Pediatric Febrile Illnesses via Metatranscriptomic Sequencing".
+Snakemake workflow and analysis utilities supporting the manuscript "Metatranscriptomic sequencing of hospitalized children reveals virome restructuring across pandemic phases and animal-associated viruses in pediatric febrile illness".
 
 ## Study Summary
 
