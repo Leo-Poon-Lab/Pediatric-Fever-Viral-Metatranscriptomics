@@ -137,16 +137,3 @@ snakemake --use-conda --cores 16 00_preprocessing/01.trimmed/SAMPLE_001.trimmed_
 - Metadata has been unified to a single runtime file, `config/patient_metadata.tsv`, with `PCR` used as the active downstream column.
 - The current codebase is optimized for this manuscript's cohort and filtering strategy rather than for broad clinical deployment without adaptation.
 
-## Current Limitations
-
-- Some downstream manuscript-specific modules remain exploratory and are not part of the default `rule all` target.
-- Several helper scripts still assume host-managed reference assets.
-- The current filtering heuristics are study-specific and should be revalidated before reuse in other cohorts.
-
-## Suggested GitHub Repository Description
-
-Pediatric febrile illness metatranscriptomics workflow for unbiased viral discovery, genome recovery, and reads/contigs evidence integration.
-
-## Suggested GitHub "About" Topics
-
-`metatranscriptomics`, `snakemake`, `virome`, `pediatrics`, `virus-discovery`, `bioinformatics`, `ngs`, `phylogenetics`
