@@ -10,10 +10,10 @@ checkpoint diamond:
         matches_header = join(virus_identification_dir, "{sample}/diamond/matches_header.tsv")
     benchmark:
         join(virus_identification_dir, "{sample}/diamond/{sample}.diamond.benchmark.txt")
-    conda: "diamond"
+    conda: "../envs/workflow.yaml"
     shell:
         """
-        check if the contigs are empty
+        # Check whether the assembly produced any contigs.
         if [ ! -s {input.contigs} ]; then
             touch {output.matches}
         else
@@ -24,7 +24,7 @@ checkpoint diamond:
             # Define header
             echo -e "Query_Sequence_ID\tSubject_Sequence_ID\tPercentage_of_Identical_Matches\tAlignment_Length\tNumber_of_Mismatches\tNumber_of_Gap_Openings\tQuery_Coverage_Per_HSP\tSubject_Coverage_Per_HSP\tStart_of_Alignment_in_Query\tEnd_of_Alignment_in_Query\tStart_of_Alignment_in_Subject\tEnd_of_Alignment_in_Subject\tE_Value\tBit_Score\tSubject_Title\tSubject_Taxonomy_IDs\tSubject_Kingdoms\tSubject_Scientific_Name" >  {params.matches_header}
 
-            cat {params.matches_header} >> {params.matches_header}
+            cat {output.matches} >> {params.matches_header}
 
         fi
         """
@@ -39,7 +39,7 @@ rule identify_potential_virus:
         virus_no_phage_matches = join(virus_identification_dir, "{sample}/diamond/potential_virus_contigs_all_no_phage.tsv"),
     params:
         matches_dir = join(virus_identification_dir, "{sample}/diamond")
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         """
         #check if the matches are empty
@@ -86,7 +86,7 @@ checkpoint blastn:
         matches_header = join(virus_identification_dir, "{sample}/blastn/matches_header.tsv")
     benchmark:
         join(virus_identification_dir, "{sample}/blastn/{sample}.blastn.benchmark.txt")
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         """
         #check if the contigs are empty
@@ -114,7 +114,7 @@ rule identify_non_virus_blastn:
         endogenous_virus = join(virus_identification_dir, "{sample}/blastn/potential_endogenous_viruses.tsv")
     params:
         blastn_dir = join(virus_identification_dir, "{sample}/blastn"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         """
         if [ ! -s {input.virus_matches_blastn} ]; then
@@ -132,7 +132,7 @@ rule anlysis_blastx_blastn_virus:
         virus_matches_blastn = join(virus_identification_dir, "{sample}/blastn/matches.tsv"),
     output:
         combined_virus_results = join(virus_identification_dir, "{sample}/diamond_blastn/combined_virus_results.txt")
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         """
         if [ ! -s {input.virus_matches_diamond} ]; then
@@ -147,8 +147,6 @@ rule anlysis_blastx_blastn_virus:
 # integrate combined blastx and blastn results for all samples
 rule combine_blastx_blastn_virus:
     input:
-        work_dir = virus_identification_dir,
-        # 明确列出所有样本的中间文件
         combined_per_sample = expand(
             join(virus_identification_dir, "{sample}/diamond_blastn/combined_virus_results.txt"),
             sample=SAMPLES
@@ -158,10 +156,12 @@ rule combine_blastx_blastn_virus:
         all_combined_diamond_blastn_lineage = join(virus_identification_dir, "all_combined_virus_results_lineages.tsv"),
         all_combined_diamond_blastn_without_phage = join(virus_identification_dir, "all_combined_virus_results.no.phages.txt"),
         all_combined_diamond_blastn_without_phage_lineage = join(virus_identification_dir, "all_combined_virus_results.no.phages_lineages.tsv")
-    conda: "base"
+    params:
+        work_dir = virus_identification_dir
+    conda: "../envs/workflow.yaml"
     shell:
         """ 
-        bash scripts/shell/contigs/combine_all_diamond_blastn_results.sh {input.work_dir} {output.all_combined_diamond_blastn}
+        bash scripts/shell/contigs/combine_all_diamond_blastn_results.sh {params.work_dir} {output.all_combined_diamond_blastn}
 
         grep -Evi "phage|bacteriophage|Caudovir|Microviridae|Microvirus|Myoviridae|Prokaryotic|Siphoviridae|Siphovirus|Podoviridae|Podovirus|Inoviridae|leviviridae|Herelleviridae|Ackermannviridae|Crassvirales"  {output.all_combined_diamond_blastn} > {output.all_combined_diamond_blastn_without_phage}
 

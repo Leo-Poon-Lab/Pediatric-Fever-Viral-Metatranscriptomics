@@ -12,7 +12,7 @@ rule kraken2:
         minimum_hit = 3,
         confidence = 0.05
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         # --report-minimizer-data加这个参数就是KrakenUniq
@@ -33,7 +33,7 @@ rule bracken:
         read_len = 100,
         abundance_level = "S"
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         "bracken -d {params.database} -i {input.kreport} -w {output.breport} -o {output.output_bracken} -r {params.read_len} -l {params.abundance_level}"
 
@@ -45,7 +45,7 @@ rule krona_plots:
     log:
         html =  join(reads_taxa_kranken2_dir,"{sample}/{sample}.krona.html"),
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         python scripts/tools/KrakenTools-1.2/kreport2krona.py --no-intermediate-ranks -r {input.breport} -o {output.output_krona}
@@ -71,7 +71,7 @@ rule kaiju:
         mismatch = 5,  # Number of mismatches allowed in Greedy mode (default: 3)
         evalue = 0.01  # Minimum E-value in Greedy mode
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         # Run Kaiju classification with sensitive parameters
@@ -99,7 +99,7 @@ rule combine_kaiju_kraken:
     params:
         work_dir = join(reads_taxa_kraken_kaiju_dir, "{sample}"),
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         #Kraken
@@ -149,7 +149,7 @@ rule extract_kaiju_kraken_reads:
         kreport = join(reads_taxa_kranken2_dir,"{sample}/{sample}.kreports"),
         kaiju_out = join(reads_taxa_kaiju_dir, "{sample}/kaiju_greedy.out"),
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         python scripts/python/reads/extract_reads_from_kraken_kaiju_combined_report.py \
@@ -164,18 +164,18 @@ rule extract_kaiju_kraken_reads:
 
 rule combined_reads_BLASTn_confirmed:
     input:
-        reads_extracted_dir = directory(join(reads_taxa_kraken_kaiju_dir, "{sample}/extracted_reads"))
+        reads_extracted_dir = join(reads_taxa_kraken_kaiju_dir, "{sample}/extracted_reads")
     output:
         blast_results_dir = directory(join(reads_taxa_kraken_kaiju_dir, "{sample}/blast_results"))
     params:
-        reads_renamed_dir = directory(join(reads_taxa_kraken_kaiju_dir, "{sample}/renamed_extracted_reads")),
+        reads_renamed_dir = join(reads_taxa_kraken_kaiju_dir, "{sample}/renamed_extracted_reads"),
 
         database = Path(config["databases"]["nucleotide"]["nt"]),
         task = "blastn",
         evalue = 1e-5,
         threads = 5,
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         # Validate input directory exists
@@ -215,7 +215,7 @@ rule combined_reads_BLASTn_confirmed:
 
 rule integration_analsis:
     input:
-        blast_results_dir = directory(join(reads_taxa_kraken_kaiju_dir, "{sample}/blast_results")),
+        blast_results_dir = join(reads_taxa_kraken_kaiju_dir, "{sample}/blast_results"),
         Kraken_Kaiju_combined_report = join(reads_taxa_kraken_kaiju_dir,"{sample}/kraken_kaiju_combined_report.tsv")
     output:
         Kraken_Kaiju_combined_report_class = join(reads_taxa_kraken_kaiju_dir,"{sample}/kraken_kaiju_combined_report_with_class.tsv"),
@@ -267,7 +267,7 @@ rule integration_analsis_2:
     shell:
         """
             find {reads_taxa_kraken_kaiju_dir} -name kraken_kaiju_combined_report_with_class_blastn.tsv | xargs awk "FNR==1 && NR!=1 {{next;}}{{print}}" > {output.all_Kraken_Kaiju_combined_blast_results}
-            python scripts/python/reads/merge_RtPCR_kraken_kaiju_combined_report.py {output.all_Kraken_Kaiju_combined_blast_results} config/Patient_Profile.tsv {params.all_Kraken_Kaiju_combined_blast_results_pcr}
+            python scripts/python/reads/merge_RtPCR_kraken_kaiju_combined_report.py {output.all_Kraken_Kaiju_combined_blast_results} config/patient_metadata.tsv {params.all_Kraken_Kaiju_combined_blast_results_pcr}
 
             #integration of all blast files of samples
             bash scripts/shell/reads/combine_all_blast_lineage_results.sh {reads_taxa_kraken_kaiju_dir} {output.all_blast_results_virus_lineages}

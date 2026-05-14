@@ -5,7 +5,7 @@ checkpoint contigs_alignment:
         virus_contigs = join(virus_identification_dir, "{sample}/diamond/potential_virus_contigs.fa")
     output:
         aligned_reads = join(abandunce_dir, "{sample}/virus_aligned.bam"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     threads: 5
     params:
         index_dir = join(abandunce_dir, "{sample}/viral_contigs_index"),
@@ -31,7 +31,7 @@ rule coverage_stat:
     output:
         coverage_log = join(abandunce_dir, "{sample}/weesam_virus_coverage.txt"),
         coverage_sorted = join(abandunce_dir, "{sample}/coverage_sorted.tsv"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     threads: 10
     params:
         file_dir = join(abandunce_dir, "{sample}"),
@@ -57,7 +57,7 @@ rule virus_abundance_estimation:
         virus_coverage_file = join(abandunce_dir, "{sample}/coverage_sorted.tsv"),
     output:
         virus_abundance = join(abandunce_dir, "{sample}/virus_abundance.txt"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     params:
         file_dir = join(abandunce_dir, "{sample}"),
         sample_name = "{sample}"
@@ -80,7 +80,7 @@ rule merge_virus_abundance_taxa:
     output:
         virus_abundance_taxa = join(abandunce_dir, "{sample}/merged_abundance_blast_taxa.txt"),
         virus_abundance_taxa_grouped = join(abandunce_dir, "{sample}/merged_abundance_blast_taxa_grouped_by_species.txt"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     params:
         sample_name = "{sample}"
     shell:
@@ -107,7 +107,7 @@ rule merge_virus_abundance_taxa_all:
     output:
         merged_abundance_blast_taxa = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.txt"),
         merged_abundance_blast_taxa_no_phage = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages.txt")
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         """ 
         #combine all merged_abundance_blast_taxa_grouped_by_species.txt
@@ -128,7 +128,7 @@ rule merge_dna_rna_annotation:
         merged_abundance_blast_taxa_no_phage = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages.txt")
     output:
         merged_abundance_blast_taxa_no_phage_with_genome_annotation = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages_with_genome.txt"),
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     params:
         ictv_master_species = Path(config["databases"]["taxonomy"]["ictv"]),
     shell:
@@ -140,12 +140,12 @@ rule merge_dna_rna_annotation:
 rule remove_index_hopping:
     input:
         merged_abundance_blast_taxa_no_phage_with_genome_annotation = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages_with_genome.txt"),
-        samples_metadata = join("config/", "Patient_Profile.tsv")
+        samples_metadata = join("config/", "patient_metadata.tsv")
     output:
         merged_abundance_blast_taxa_no_phage_with_genome_annotation_no_index_hopping = join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages_with_genome.txt.indexhopping"),
         filtered_index_hopping_file = join(abandunce_dir, "filtered.index.hopping.txt")
     conda: "base"
     shell:
         """
-        python scripts/python/contigs/filter_index_hopping.py {input.all_concatemerged_abundance_blast_taxa_no_phage_with_genome_annotationnated_file} {input.samples_metadata} {output.all_concatenated_file_no_index_hopping} {output.merged_abundance_blast_taxa_no_phage_with_genome_annotation_no_index_hopping}
+        python scripts/python/contigs/filter_index_hopping.py {input.merged_abundance_blast_taxa_no_phage_with_genome_annotation} {input.samples_metadata} {output.merged_abundance_blast_taxa_no_phage_with_genome_annotation_no_index_hopping} {output.filtered_index_hopping_file}
         """

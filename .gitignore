@@ -1,33 +1,36 @@
-# 临时文件
-README.md
-*.tmp
-*.temp
-*~
-
+# Runtime outputs
+.snakemake/
+.tmp/
+logs/
 00_preprocessing/
 01_reads_taxa/
 02_assembly/
 03_virus_identification/
 04_abundance/
 05_virus_reads_contigs_integration_analysis/
+results/
+
+# Local inputs and private metadata
+config/config.yaml
+config/patient_metadata.tsv
+config/samples.tsv
+data/raw/
 resources/
+
+# Local validation artifacts
+reports/*.tsv
+
+# Temporary files
+*.tmp
+*.temp
+*~
+*.log
 tt
 
-# 日志文件
-logs/
-*.log
-
-
-# 大文件/压缩包（如果已经在仓库中）
+# Archives
 *.zip
 *.tar.gz
 
-# 系统文件
+# System files
 .DS_Store
 Thumbs.db
-
-# 结果数据（如果太大）
-results/
-# 或者只忽略部分大文件
-# results/*.bam
-# results/*.vcf

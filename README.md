@@ -1,6 +1,6 @@
 # Pediatric-Fever-Viral-Metatranscriptomics
 
-Snakemake workflow and analysis utilities supporting the manuscript "Metatranscriptomic sequencing of hospitalized children reveals virome restructuring across pandemic phases and animal-associated viruses in pediatric febrile illness".
+Snakemake workflow and analysis utilities supporting the manuscript "Elucidating the Viral Aetiology of Unexplained Pediatric Febrile Illnesses via Metatranscriptomic Sequencing".
 
 ## Study Summary
 
@@ -26,7 +26,6 @@ This repository is intended to expose the analysis logic used in the manuscript.
 - `config/config.example.yaml`: portable configuration template
 - `config/samples.example.tsv`: public sample sheet template
 - `config/patient_metadata.example.tsv`: public metadata template
-- `TOP_JOURNAL_CODE_REVIEW.md`: engineering audit notes for the revised codebase
 
 ## What This Repository Deliberately Excludes
 
@@ -40,7 +39,7 @@ This repository is intended to expose the analysis logic used in the manuscript.
 
 For a public GitHub release, keep tracked files limited to reusable code, templates, and documentation. Real runtime files such as `config/config.yaml`, `config/samples.tsv`, `config/patient_metadata.tsv`, `data/raw/`, `.snakemake/`, and large result directories should remain local only.
 
-Detailed release recommendations are documented in `GITHUB_RELEASE_CHECKLIST.md`.
+Release-facing guidance is summarized directly in this README so the public repository remains self-contained.
 
 ## Repository Layout
 
@@ -48,7 +47,6 @@ Detailed release recommendations are documented in `GITHUB_RELEASE_CHECKLIST.md`
 .
 ├── Snakefile
 ├── README.md
-├── TOP_JOURNAL_CODE_REVIEW.md
 ├── config/
 │   ├── config.example.yaml
 │   ├── patient_metadata.example.tsv
@@ -57,7 +55,8 @@ Detailed release recommendations are documented in `GITHUB_RELEASE_CHECKLIST.md`
 ├── modules/
 ├── scripts/
 └── data/
-    └── raw/                  # local only, ignored from Git
+    ├── example_raw/          # tiny public-safe example inputs tracked in Git
+    └── raw/                  # real local inputs, ignored from Git
 ```
 
 ## Configuration
@@ -80,7 +79,16 @@ Then edit:
 
 By default, raw reads are expected under the directory configured by `io.raw_data_dir` in `config/config.yaml`.
 
-Example layout:
+Example public-safe layout bundled with this repository:
+
+```text
+data/example_raw/
+    SAMPLE_001/
+        SAMPLE_001_R1.fastq.gz
+        SAMPLE_001_R2.fastq.gz
+```
+
+Real local runs should use a private runtime directory such as:
 
 ```text
 data/raw/
@@ -128,3 +136,17 @@ snakemake --use-conda --cores 16 00_preprocessing/01.trimmed/SAMPLE_001.trimmed_
 - The workflow supports external FASTQ paths so large raw data do not need to be duplicated into the repository.
 - Metadata has been unified to a single runtime file, `config/patient_metadata.tsv`, with `PCR` used as the active downstream column.
 - The current codebase is optimized for this manuscript's cohort and filtering strategy rather than for broad clinical deployment without adaptation.
+
+## Current Limitations
+
+- Some downstream manuscript-specific modules remain exploratory and are not part of the default `rule all` target.
+- Several helper scripts still assume host-managed reference assets.
+- The current filtering heuristics are study-specific and should be revalidated before reuse in other cohorts.
+
+## Suggested GitHub Repository Description
+
+Pediatric febrile illness metatranscriptomics workflow for unbiased viral discovery, genome recovery, and reads/contigs evidence integration.
+
+## Suggested GitHub "About" Topics
+
+`metatranscriptomics`, `snakemake`, `virome`, `pediatrics`, `virus-discovery`, `bioinformatics`, `ngs`, `phylogenetics`

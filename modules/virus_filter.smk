@@ -5,7 +5,7 @@ rule reads_contigs_integration:
     output:
         reads_contgis_virus_summary = join(reads_contigs_dir,"virus_summary_with_contigs.tsv"),
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
             #4. Reads Contigs Info
@@ -22,12 +22,12 @@ rule filter:
         reads_contgis_virus_summary_index_hopping_filtered_final = join(reads_contigs_dir,"virus_summary_with_contigs_indexhopping.filtered.final.tsv"),
         reads_contgis_virus_summary_index_hopping_filtered_final_dnarna = join(reads_contigs_dir,"virus_summary_with_contigs_indexhopping.filtered.final.dnarna.tsv")
     params:
-        patient_profile = "config/Patient_Profile_sequencing.tsv",
+        patient_profile = "config/patient_metadata.tsv",
         reads_contgis_virus_summary_index_hopping_removed = join(reads_contigs_dir, "virus_summary_with_contigs_indexhopping_removed.tsv"),
         contamination_annotation_file = Path(config["databases"]["annotation"]["contamination"]),
         ICTV_MS_39_v4 = Path(config["databases"]["taxonomy"]["ictv"]),
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
             # Final reads support and RPM

@@ -159,8 +159,8 @@ for contig, data in contig_data.items():
             'Genus': data['genus']
         }
 
-# Dictionary to store RT-PCR values from virus_summary.tsv
-rt_pcr_dict = {}
+# Dictionary to store PCR values from virus_summary.tsv
+pcr_dict = {}
 
 # Merge with virus_summary
 with open(virus_summary_path, 'r') as f_in, open(output_path, 'w') as f_out:
@@ -190,8 +190,8 @@ with open(virus_summary_path, 'r') as f_in, open(output_path, 'w') as f_out:
         key = (row['Sample'], row['Virus_Species'])
         processed_keys.add(key)
         
-        # Store the RT-PCR value in the dictionary
-        rt_pcr_dict[key[0]] = row['RT-PCR']
+        # Store the PCR value in the dictionary
+        pcr_dict[key[0]] = row['PCR']
 
         if key in species_aggregate:
             data = species_aggregate[key]
@@ -238,7 +238,7 @@ with open(virus_summary_path, 'r') as f_in, open(output_path, 'w') as f_out:
 
             new_row = {
                 'Sample': key[0],
-                'RT-PCR': rt_pcr_dict.get(key[0], ''),
+                'PCR': pcr_dict.get(key[0], ''),
                 'Virus_Class': taxonomy.get('Class', ''),
                 'Virus_Family': taxonomy.get('Family', ''),
                 'Virus_Genus': taxonomy.get('Genus', ''),

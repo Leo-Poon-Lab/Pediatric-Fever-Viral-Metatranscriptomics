@@ -4,7 +4,7 @@ from sys import argv
 virus_summary = argv[1]
 # virus_summary = "virus_summary_with_contigs.tsv"
 metagenomic_samples_file = argv[2]
-# metagenomic_samples_file = "Patient_Profile_sequencing.tsv"
+# metagenomic_samples_file = "patient_metadata.tsv"
 
 filtered_output = argv[3]
 # filtered_output = "virus_summary_with_contigs_indexhopping.tsv"

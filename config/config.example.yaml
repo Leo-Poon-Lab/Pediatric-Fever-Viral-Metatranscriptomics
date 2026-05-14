@@ -1,0 +1,95 @@
+project:
+  name: "Pediatric_Unexplained_Fever_Metatranscriptomics"
+  version: "1.0.0"
+  description: "Metatranscriptomic analysis of viral pathogens in pediatric patients"
+
+io:
+  samples_file: "config/samples.tsv"
+  raw_data_dir: "data/raw"
+  output:
+    preprocessing: "00_preprocessing"
+    assembly: "02_assembly"
+    virus_id: "03_virus_identification"
+    abundance: "04_abundance"
+    annotation: "05_virus_annotation"
+    phylogeny: "06_virus_phylogenetic"
+    logs: "logs"
+
+samples:
+  use_samples_file: true
+  naming_pattern:
+    R1:
+      - "{sample}_R1.fastq.gz"
+      - "{sample}_1.fastq.gz"
+      - "{sample_id}_R1.fastq.gz"
+      - "{sample_id}_1.fastq.gz"
+    R2:
+      - "{sample}_R2.fastq.gz"
+      - "{sample}_2.fastq.gz"
+      - "{sample_id}_R2.fastq.gz"
+      - "{sample_id}_2.fastq.gz"
+
+  # Optional per-sample raw FASTQ overrides for data stored outside io.raw_data_dir.
+  # These paths may be absolute or relative to the repository root.
+  # files:
+  #   PMT6802:
+  #     R1: "/absolute/path/to/PMT6802_1.fastq.gz"
+  #     R2: "/absolute/path/to/PMT6802_2.fastq.gz"
+
+databases:
+  nucleotide:
+    nt: "/path/to/blast/nt"
+  protein:
+    nr: "/path/to/diamond/nr.dmnd"
+  human:
+    bwa_index: "/path/to/human/bwa/index/prefix"
+  rrna:
+    sortmerna:
+      archaea_5s: "/path/to/5SRNAdb_Archaea.fasta"
+      bacteria_5s: "/path/to/5SRNAdb_Bacteria.fasta"
+      eukaryota_5s: "/path/to/5SRNAdb_Eukaryota.fasta"
+      lsu: "/path/to/SILVA_LSU.fasta"
+      ssu: "/path/to/SILVA_SSU.fasta"
+    bowtie2:
+      rRNA_db: "/path/to/rrna/bowtie2/index"
+    workdir: "/path/to/sortmerna/workdir"
+  taxonomy:
+    kraken2uniq:
+      db: "/path/to/kraken2/db"
+    kaiju:
+      nodes: "/path/to/kaiju/nodes.dmp"
+      names: "/path/to/kaiju/names.dmp"
+      db: "/path/to/kaiju/db.fmi"
+      refseq_nodes: "/path/to/kaiju/refseq/nodes.dmp"
+      refseq_names: "/path/to/kaiju/refseq/names.dmp"
+      refseq_db: "/path/to/kaiju/refseq/db.fmi"
+    ictv: "/path/to/ICTV_MS_39_v4.tsv"
+  annotation:
+    contamination: "/path/to/contamination_lab_known_taxID.txt"
+
+preprocessing:
+  quality_control:
+    min_quality: 20
+    min_length: 36
+  host_removal:
+    enabled: true
+    method: "bwa"
+    threads: 16
+    min_mapq: 10
+  rrna_removal:
+    enabled: true
+    method: "sortmerna"
+    threads: 20
+
+assembly:
+  method: "megahit"
+
+virus_identification:
+  blast:
+    evalue: 1e-10
+    percent_identity: 70
+
+resources:
+  default:
+    threads: 4
+    memory: "8G"

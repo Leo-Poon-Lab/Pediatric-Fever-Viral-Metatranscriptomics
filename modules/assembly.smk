@@ -8,6 +8,6 @@ checkpoint megahit:
     threads: 10
     benchmark:
         join(assembly_dir, "{sample}/megahit/{sample}.megahit.benchmark.txt")
-    conda: "base"
+    conda: "../envs/workflow.yaml"
     shell:
         "megahit -1 {input.r1} -2 {input.r2} -f -o {output.output_dir} -t {threads}"

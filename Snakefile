@@ -1,123 +1,164 @@
-#没有指定 rule all 的话，Snakemake 将默认执行文件中的第一个规则。但是，这可能不一定是你期望的最终目标。通过明确指定 rule all，你可以确保 Snakemake 会在执行工作流时生成你所需的目标文件。
-#它将自动检查当前目录下的 Snakefile，并根据依赖关系图来确定需要执行的规则
-#没有指定时想运行rmhost,命令行为：snakemake -j 2 --use-conda 2.rmhost/test1_1.rmhost.fq 2.rmhost/test1_2.rmhost.fq
-#指定all后：snakemake -j 2 --use-conda  > smk.log 2>&1
-# """
-#  Main Snakemake workflow for: 
-# Elucidating Viral Pathogens in Pediatric Unexplained Fever Using Metatranscriptomics
-# """
+"""Main Snakemake workflow for the pediatric fever viral metatranscriptomics study."""
 
 __maintainer__ = "Zhang Tao"
 __email__ = "zhangtao@hku.hk"
 
-import os
-from os.path import join
-import sys
-import glob
-import pandas as pd
 import csv
-from pathlib import Path  # 推荐使用pathlib
+from os.path import join
+from pathlib import Path
 
-# Directory structure
-BASE_DIR = Path(".").resolve()
-
-DATA_DIR = BASE_DIR / "resources"
-Config_dir = BASE_DIR / "config"
-
-preprocessing_dir = "00_preprocessing"
-reads_taxa_kranken2_dir = "01_reads_taxa/kraken2"
-reads_taxa_kaiju_dir = "01_reads_taxa/kaiju"
-reads_taxa_kraken_kaiju_dir = "01_reads_taxa/kraken2_kaiju"
-assembly_dir = "02_assembly"
-virus_identification_dir = "03_virus_identification"
-abandunce_dir = "04_abundance"
-abandunce_consensus_dir = "04_abundance_consensus"
-reads_contigs_dir = "05_virus_reads_contigs_integration_analysis"
-virus_annotation_dir = "05_virus_annotation"
-virus_component_analysis_dir = "05_virus_component_analysis"
-virus_phylogenetic_dir = "06_virus_phylogenetic"
 
 configfile: "config/config.yaml"
 
-if not os.path.exists("logs"):
-    os.makedirs("logs")
 
-# LOAD METADATA
-metadata = pd.read_csv(Config_dir / "samples.tsv", sep="\t", index_col=0)
-SAMPLES = metadata["name"].str.strip().tolist()
+BASE_DIR = Path(workflow.basedir).resolve()
 
-# Create a dictionary with sample IDs as keys and file paths as values
-names = metadata["name"].str.strip().to_dict()
 
-# Define a function to construct the file path using the sample name
-def get_file_path(sample_id, name, read_number, base_dir=DATA_DIR):
-     sample_name = name + "_" + read_number + ".fastq.gz"
-     return os.path.join(base_dir, sample_id, sample_name)
-    
+def _config_path(key, default):
+     return Path(config.get("io", {}).get(key, default))
+
+
+def _output_path(key, default):
+     return config.get("io", {}).get("output", {}).get(key, default)
+
+
+SAMPLES_FILE = BASE_DIR / _config_path("samples_file", "config/samples.tsv")
+DATA_DIR = BASE_DIR / _config_path("raw_data_dir", "resources")
+LOG_DIR = BASE_DIR / _output_path("logs", "logs")
+
+preprocessing_dir = _output_path("preprocessing", "00_preprocessing")
+reads_taxa_kranken2_dir = "01_reads_taxa/kraken2"
+reads_taxa_kaiju_dir = "01_reads_taxa/kaiju"
+reads_taxa_kraken_kaiju_dir = "01_reads_taxa/kraken2_kaiju"
+assembly_dir = _output_path("assembly", "02_assembly")
+virus_identification_dir = _output_path("virus_id", "03_virus_identification")
+abandunce_dir = _output_path("abundance", "04_abundance")
+abandunce_consensus_dir = f"{abandunce_dir}_consensus"
+reads_contigs_dir = "05_virus_reads_contigs_integration_analysis"
+virus_annotation_dir = _output_path("annotation", "05_virus_annotation")
+virus_component_analysis_dir = "05_virus_component_analysis"
+virus_phylogenetic_dir = _output_path("phylogeny", "06_phylogeny")
+
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_samples(samples_file):
+     if not samples_file.exists():
+          raise FileNotFoundError(f"Samples sheet not found: {samples_file}")
+
+     sample_records = {}
+     with samples_file.open("r", newline="") as handle:
+          reader = csv.DictReader(handle, delimiter="\t")
+          required_columns = {"sample_id", "name"}
+          missing = required_columns.difference(reader.fieldnames or [])
+          if missing:
+               missing_cols = ", ".join(sorted(missing))
+               raise ValueError(f"Samples sheet is missing required columns: {missing_cols}")
+
+          for row in reader:
+               sample_id = row["sample_id"].strip()
+               sample_name = row["name"].strip()
+               if not sample_id or not sample_name:
+                    raise ValueError("Every sample row must contain non-empty sample_id and name values")
+               sample_records[sample_id] = {
+                    "name": sample_name,
+                    "fastq_r1": row.get("fastq_r1", "").strip(),
+                    "fastq_r2": row.get("fastq_r2", "").strip(),
+               }
+
+     if not sample_records:
+          raise ValueError(f"No samples were loaded from {samples_file}")
+
+     return sample_records
+
+
+sample_records = load_samples(SAMPLES_FILE)
+names = {sample_id: record["name"] for sample_id, record in sample_records.items()}
+SAMPLES = list(sample_records.keys())
+
+
+def get_sample_record(sample_id):
+     record = sample_records[sample_id]
+     if record.get("fastq_r1") or record.get("fastq_r2"):
+          return record
+
+     refreshed_records = load_samples(SAMPLES_FILE)
+     refreshed_record = refreshed_records.get(sample_id, record)
+     sample_records[sample_id] = refreshed_record
+     names[sample_id] = refreshed_record["name"]
+     return refreshed_record
+
+
+def _resolve_fastq_path(path_value):
+     path = Path(path_value)
+     if not path.is_absolute():
+          path = BASE_DIR / path
+     return str(path)
+
+
+def _render_pattern(pattern, sample_id, sample_name, read_number):
+     return (
+          str(pattern)
+          .replace("{sample}", sample_name)
+          .replace("{sample_id}", sample_id)
+          .replace("{read}", str(read_number))
+     )
+
+
+def get_file_path(sample_id, sample_name, read_number, base_dir=DATA_DIR):
+     pattern_key = f"R{read_number}"
+     configured_files = config.get("samples", {}).get("files", {})
+     sample_file_overrides = configured_files.get(sample_id) or configured_files.get(sample_name) or {}
+     explicit_config_fastq = sample_file_overrides.get(pattern_key)
+     if explicit_config_fastq:
+          return _resolve_fastq_path(explicit_config_fastq)
+
+     record = get_sample_record(sample_id)
+     explicit_fastq = record.get(f"fastq_r{read_number}")
+     if explicit_fastq:
+          return _resolve_fastq_path(explicit_fastq)
+
+     naming_pattern = config.get("samples", {}).get("naming_pattern", {})
+     configured_patterns = naming_pattern.get(pattern_key)
+     if isinstance(configured_patterns, str):
+          candidate_patterns = [configured_patterns]
+     elif configured_patterns:
+          candidate_patterns = list(configured_patterns)
+     else:
+          candidate_patterns = [
+               "{sample}_R" + str(read_number) + ".fastq.gz",
+               "{sample}_" + str(read_number) + ".fastq.gz",
+               "{sample_id}_R" + str(read_number) + ".fastq.gz",
+               "{sample_id}_" + str(read_number) + ".fastq.gz",
+          ]
+
+     candidates = [
+          Path(base_dir) / sample_id / _render_pattern(pattern, sample_id, sample_name, read_number)
+          for pattern in candidate_patterns
+     ]
+     for candidate in candidates:
+          if candidate.exists():
+               return str(candidate)
+
+     return str(candidates[0])
+
+
 all_outfiles = [
-     # preprocessing
-     # #使用expand来自动组合出所有的目标文件
-     #expand(join(preprocessing_dir, "00.raw_qc/fastqc/{sample}_{R}_fastqc.html"), sample=names.keys(), R=["1","2"]),
-     # expand(join(preprocessing_dir, "00.raw_qc/trim_fastqc/{sample}_{R}_fastqc.html"), sample=names.keys(), R=["1","2"]),
-     # # join(reads_taxa_kranken2_dir, "PMT8346_trim", "PMT8346.b.krona.txt"),
-     # expand(join(reads_taxa_kranken2_dir, "{sample}", "{sample}.b.krona.txt"), sample=names.keys()),
-     # expand(join(reads_taxa_kranken2_dir, "{sample}", "{sample}.b.krona.txt"), sample=names.keys()),
-     # directory(join(reads_taxa_kraken_kaiju_dir, "PMT5836/blast_results")),
-     # join(virus_identification_dir,"all_combined_virus_results_lineages.tsv"),
-     # join(reads_taxa_kraken_kaiju_dir, "virus_summary.tsv"),
-     # join(reads_contigs_dir,"virus_summary_with_contigs.tsv")
-     join(reads_contigs_dir,"virus_summary_with_contigs_indexhopping.filtered.final.dnarna.tsv")
-     #join(abandunce_dir, "all_concatenated_merged_abundance_blast_taxa.no.phages_with_genome.txt")
-     # expand(join(abandunce_dir, "{sample}/virus_abundance.txt"), sample=names.keys())
-
-     #expand(join(virus_identification_dir, "{sample}/blastn/matches.tsv"), sample=names.keys()),
-     #expand(join(virus_identification_dir, "{sample}", "diamond_blastn/combined_virus_results.txt"), sample=names.keys()),
-     #expand(join(virus_identification_dir, "{sample}/blastn/potential_non_viruses.tsv"), sample=names.keys()),
-     #expand(join(virus_identification_dir, "{sample}/blastn/potential_endogenous_viruses.tsv"), sample=names.keys()),
-     #expand(join(abandunce_dir, "{sample}", "merged_abundance_blast_taxa.txt"), sample=names.keys()),
-     # join(virus_identification_dir, "all_combined_virus_results.no.phages.txt")
-     # expand(join(preprocessing_dir, "03.rmRrna/{sample}_rmhost_rmRrna_1.fq"), sample=names.keys()),
-
-     # join(abandunce_dir, "quantification_result.txt"),
-     # join(virus_component_analysis_dir, "quantification_rpm_blast_results.tsv"),
-     # join(virus_component_analysis_dir, "quantification_result.txt.no.phages.RPM_length_filtered")
-     # join(virus_component_analysis_dir, "OK.txt")
+     str(Path(reads_contigs_dir) / "virus_summary_with_contigs_indexhopping.filtered.final.dnarna.tsv"),
 ]
 
+
 rule all:
-   input: all_outfiles
+     input:
+          all_outfiles
 
-# test var
-# var = get_file_path("kkk","name","2")
-# rule print_var:
-#     run:
-#         print(var)
-# rule print_var_shell:
-#     shell:
-#         """
-#         echo '{var}'
-#         """
-# include: "modules_pipeline/preprocessing.smk"
-# include: "modules_pipeline/reads_taxa_assignment.smk"
-# include: "modules_pipeline/assembly.smk"
-# include: "modules_pipeline/virus_identification.smk"
-
-# include: "modules_pipeline/virus_abundance_calculation.smk"
-# include: "modules_pipeline/novel_virus_identification.smk"
-# include: "modules_pipeline/virus_annotation.smk"
-# include: "modules_pipeline/Bacterial_fungal_identification.smk"
-# include: "modules_pipeline/phylogenetic_analysis.smk"
 
 include: "modules/preprocessing.smk"
-#include: "modules/reads_taxa_assignment.smk"
 include: "modules/assembly.smk"
 include: "modules/virus_identification_reads_based.smk"
 include: "modules/virus_identification_contig_based.smk"
 include: "modules/virus_abundance_calculation.smk"
 include: "modules/virus_filter.smk"
-
-#include: "modules/virus_component_analysis.smk"
-# include: "modules/virus_phylogenetic.smk"
 
 
 

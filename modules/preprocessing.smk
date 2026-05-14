@@ -9,7 +9,7 @@ rule raw_fastqc:
         outdir = directory(join(preprocessing_dir, "00.raw_qc/fastqc"))
     threads: 10
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         fastqc {input.r1} -t {threads} --outdir {params.outdir} - > {output.r1_qc}
@@ -32,7 +32,7 @@ rule trim_fastp:
         html = join(preprocessing_dir, "01.trimmed/{sample}.fastp.html"),
         fastp_log = join(preprocessing_dir, "01.trimmed/{sample}.fastp.log")
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         fastp -i {input.r1} -I {input.r2} -o {output.trim_r1} -O {output.trim_r2} \
@@ -52,7 +52,7 @@ rule trim_qc:
         outdir = directory(join(preprocessing_dir, "00.raw_qc/trim_fastqc"))
     threads: 10
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         fastqc {input.trim_r1} -t {threads} --outdir {params.outdir} - > {output.trim_r1_qc}
@@ -71,7 +71,7 @@ rule rmhost:
         aligned_reads = join(preprocessing_dir, "02.rmhost/{sample}.aligned.sam"),
     threads: 10
     conda:
-        "base"
+        "envs/workflow.yaml"
     shell:
         """
         bwa-mem2 mem -t {threads} -M {params.index_bwa2} {input.trim_r1} {input.trim_r2} -o {params.aligned_reads}

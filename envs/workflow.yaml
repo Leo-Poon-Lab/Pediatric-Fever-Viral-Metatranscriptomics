@@ -1,0 +1,25 @@
+name: pfvm-workflow
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas
+  - biopython
+  - fastp
+  - fastqc
+  - bwa-mem2
+  - samtools
+  - sortmerna
+  - pigz
+  - megahit
+  - bowtie2
+  - blast
+  - diamond
+  - kraken2
+  - bracken
+  - kaiju
+  - seqkit
+  - seqtk
+  - taxonkit
