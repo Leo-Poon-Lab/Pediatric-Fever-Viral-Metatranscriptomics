@@ -1,6 +1,6 @@
 # Pediatric-Fever-Viral-Metatranscriptomics
 
-Snakemake workflow and analysis utilities supporting the manuscript "Metatranscriptomic sequencing of hospitalized children reveals virome restructuring across pandemic phases and animal-associated viruses in pediatric febrile illness".
+Snakemake workflow and analysis utilities supporting the manuscript "Metatranscriptomic sequencing expands viral diagnosis in hospitalized febrile children and reveals pandemic-associated restructuring of the respiratory virome".
 
 ## Study Summary
 
